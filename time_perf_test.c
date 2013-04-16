@@ -97,7 +97,7 @@ void test_clock_gettime(void)
         {
             clock_gettime(clk_id, &ts);
         }
-        TEST_END2("gettimeofday(%s)", clocks[a].name);
+        TEST_END2("clock_gettime(%s)", clocks[a].name);
     }
 }
 
