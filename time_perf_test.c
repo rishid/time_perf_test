@@ -4,6 +4,7 @@
 #include <sys/time.h>
 #include <sys/timeb.h>
 #include <stdio.h>
+#include <stdint.h>
 
 static int N = 10000000;
 
@@ -101,12 +102,77 @@ void test_clock_gettime(void)
     }
 }
 
+#include <x86intrin.h> // __rdtsc()
+#include <unistd.h> // usleep
+#define USEC_PER_SEC	1000000L
+#define NSEC_PER_SEC	1000000000L
+#define NSEC_PER_MSEC	1000000L
+#define NSEC_PER_USEC	1000L
+
+void ts_sub(struct timespec *a, struct timespec *b, struct timespec *result)
+{
+    result->tv_sec = a->tv_sec - b->tv_sec;
+        result->tv_nsec = a->tv_nsec - b->tv_nsec;
+        if (result->tv_nsec < 0) {
+            --result->tv_sec;
+            result->tv_nsec += NSEC_PER_SEC;
+        }
+}
+
+
+inline uint64_t ts_to_usec(struct timespec *tsp)
+{
+    return (uint64_t)(tsp->tv_sec * USEC_PER_SEC) + ((uint64_t)(tsp->tv_nsec) / NSEC_PER_USEC);
+}
+
+
+uint64_t get_tsc_rate_per_second()
+{
+    uint64_t tsc_per_second, delta_usec;
+    struct timespec ts_before, ts_after, ts_delta;
+    uint64_t tsc_before, tsc_after, tsc_delta;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts_before);
+    tsc_before = __rdtsc();
+    usleep(100000);//0.1 sec
+    clock_gettime(CLOCK_MONOTONIC, &ts_after);
+    tsc_after = __rdtsc();
+
+    // Calc delta's
+    tsc_delta = tsc_after - tsc_before;
+
+    ts_sub(&ts_after, &ts_before, &ts_delta);
+    delta_usec = ts_to_usec(&ts_delta);
+
+    // Calc rate
+    tsc_per_second = tsc_delta * 1000000L / delta_usec;
+
+    return tsc_per_second;
+}
+
+void test_rdtsc(void)
+{
+    uint64_t start, clock_count;
+
+    start = __rdtsc();
+    TEST_START();
+    for (unsigned long i = 0; i < N; ++i)
+    {
+        clock_count = __rdtsc();
+    }
+    TEST_END("rdtsc");
+
+    printf("rdtsc => %.03f ns per call (using rdtsc)\n",
+           (double)((clock_count - start) / N) * (1000*1000*1000.0 / get_tsc_rate_per_second()) );
+}
+
 int main(void)
 {
     test_time();
     test_ftime();
     test_gettimeofday();
     test_clock_gettime();
+    test_rdtsc();
 
     return 0;
 }
