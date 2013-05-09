@@ -1,5 +1,4 @@
 
-
 #include <time.h>
 #include <sys/time.h>
 #include <sys/timeb.h>
@@ -11,8 +10,8 @@ static int N = 10000000;
 #define TEST_START()                            \
     unsigned long long t_start = gettime();
 
-#define TEST_END(tname)                                                 \
-    unsigned long long t_end = gettime();                               \
+#define TEST_END(tname)                                             \
+    unsigned long long t_end = gettime();                           \
     printf(tname " => %llu ns per call\n", (t_end - t_start) / N);
 
 #define TEST_END2(tname, subtname)                                      \
@@ -112,11 +111,11 @@ void test_clock_gettime(void)
 void ts_sub(struct timespec *a, struct timespec *b, struct timespec *result)
 {
     result->tv_sec = a->tv_sec - b->tv_sec;
-        result->tv_nsec = a->tv_nsec - b->tv_nsec;
-        if (result->tv_nsec < 0) {
-            --result->tv_sec;
-            result->tv_nsec += NSEC_PER_SEC;
-        }
+    result->tv_nsec = a->tv_nsec - b->tv_nsec;
+    if (result->tv_nsec < 0) {
+        --result->tv_sec;
+        result->tv_nsec += NSEC_PER_SEC;
+    }
 }
 
 
